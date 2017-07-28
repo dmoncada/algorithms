@@ -30,12 +30,9 @@
 #ifndef FIBHEAP_H_
 #define FIBHEAP_H_
 
-#include <limits.h>			// For INT_MIN.
 #include <stdbool.h>			// For the bool type.
+#include <stdlib.h>			// For malloc().
 #include <math.h>			// For sqrt(), floor(), and log().
-#include <errno.h>			// For EINVAL.
-
-#define NEG_INF INT_MIN
 
 /* CAUTION! Assumes the list doesn't change order. */
 #define FIB_HEAP_FOREACH(runner, list)						\

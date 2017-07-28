@@ -1,6 +1,4 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <time.h>
 
 #include "fibheap.h"
 
@@ -39,7 +37,7 @@ struct word words[] = {
 	{13, "que"}, {11, "encore."}, {14, "tout\n"},
 	{29, "spectateurs"}, {30, "le jour de mon"},
 	{17, "pour que je"}, {21, "il me"}, {23, "à"},
-	{35, "cris de"}, {20, "moins seul,"}, {32, "et qu'ils"},
+	{35, "cris de"}, {20, "moins seul,"}, {32, "et qu'ils "},
 	{25, "qu'il\n"}, {26, "y"}, {28, "beaucoup de"},
 	{34, "avec des"}, {36, "haine."}, {7, "et"},
 	{31, "exécution"}, {3, "que"}, {6, "heureux,"}
@@ -94,6 +92,9 @@ int main(int argc __attribute__ ((unused)),
 		printf("%s ", w->str);
 		free(n);
 	}
+	free(h1);
+	free(h2);
+
 	printf("\n");
 
 	/* Smile, it's good for you. */
