@@ -350,10 +350,23 @@ static inline int fibheap_decrease(struct fibheap *h, struct fibheap_node *x)
 	return 0;
 }
 
-/* TODO: properly implement the delete operation. */
-//static inline void fibheap_delete(struct fibheap *h, struct fibheap_node *x)
-//{
-//}
+static inline void fibheap_delete(struct fibheap *h, struct fibheap_node *x)
+{
+	struct fibheap_node *y = x->parent;
+
+	/* "Decreasing" the value of the deleted node to the minimum possible
+	 * value is equivalent to cutting the node from its parent and cascade
+	 * cutting the parent unconditionally. */
+	if (y) {
+		cut(h, x, y);
+		cascading_cut(h, y);
+	}
+	/* Also, the node is marked as the one with the minimum value. */
+	h->min = x;
+
+	/* Finally, the node is extracted from the heap. */
+	fibheap_extract_min(h);
+}
 
 #endif // FIBHEAP_H_
 

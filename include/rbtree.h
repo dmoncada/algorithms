@@ -17,7 +17,7 @@
  *  - rbtree_successor()	gets the following node for a specific one.
  *  - rbtree_insert()		inserts a node, then rebalances the tree.
  *  - rbtree_delete()		deletes a node, then rebalances the tree.
- *  - rbtree_destroy()		deallocs. the tree.
+ *  - rbtree_destroy()		deallocs. the tree and all its nodes.
  *
  * [1] "Introduction to Algorithms", 3rd ed, ch. 13 -- Red-Black Trees, by CLRS.
  */
@@ -75,7 +75,7 @@ static inline struct rbtree_node *make_rbtree_node(void *value)
 	return node;
 }
 
-static inline struct rbtree_node *make_rbtree_sentinel(void)
+static inline struct rbtree_node *make_rbtree_sentinel()
 {
 	struct rbtree_node *sentinel = malloc(sizeof(struct rbtree_node));
 
@@ -89,52 +89,44 @@ static inline struct rbtree_node *make_rbtree_sentinel(void)
 	return sentinel;
 }
 
-/* Tried to implement rotate functions as macros; didn't have much luck...
- * Code repetition is never advisable, but here it's not so bad. */
+#define ROTATE(_rbtree, x, dir, opp)						\
+										\
+	do {									\
+		struct rbtree_node *y;						\
+										\
+		y        = (x)->opp;						\
+		(x)->opp = y->dir;						\
+										\
+		if (y->dir != (_rbtree)->nil)					\
+			y->dir->parent = (x);					\
+										\
+		y->parent = (x)->parent;					\
+										\
+		if ((x)->parent == (_rbtree)->nil)				\
+			(_rbtree)->root = y;					\
+		else if ((x) == (x)->parent->dir)				\
+			(x)->parent->dir = y;					\
+		else								\
+			(x)->parent->opp = y;					\
+										\
+		y->dir      = (x);						\
+		(x)->parent = y;						\
+	} while (0)
+
+#define ROTATE_LEFT(_rbtree, x)							\
+	ROTATE((_rbtree), (x), left, right)
+
+#define ROTATE_RIGHT(_rbtree, x)						\
+	ROTATE((_rbtree), (x), right, left)
+
 static inline void rotate_left(struct rbtree *t, struct rbtree_node *x)
 {
-	struct rbtree_node *y;
-
-	y        = x->right;
-	x->right = y->left;
-
-	if (y->left != t->nil)
-		y->left->parent = x;
-
-	y->parent = x->parent;
-
-	if (x->parent == t->nil)
-		t->root = y;
-	else if (x == x->parent->left)
-		x->parent->left = y;
-	else
-		x->parent->right = y;
-
-	y->left   = x;
-	x->parent = y;
+	ROTATE_LEFT(t, x);
 }
 
 static inline void rotate_right(struct rbtree *t, struct rbtree_node *x)
 {
-	struct rbtree_node *y;
-
-	y       = x->left;
-	x->left = y->right;
-
-	if (y->right != t->nil)
-		y->right->parent = x;
-
-	y->parent = x->parent;
-
-	if (x->parent == t->nil)
-		t->root = y;
-	else if (x == x->parent->right)
-		x->parent->right = y;
-	else
-		x->parent->left = y;
-
-	y->right  = x;
-	x->parent = y;
+	ROTATE_RIGHT(t, x);
 }
 
 #define INSERT_FIXUP(_rbtree, y, z, dir, opp)					\
@@ -229,6 +221,20 @@ static inline void transplant(struct rbtree *t, struct rbtree_node *u,
 	v->parent = u->parent;
 }
 
+static inline struct rbtree_node *__rbtree_search(struct rbtree *t,
+						  struct rbtree_node *x,
+						  void *value)
+{
+	while (x != t->nil && t->cmp(value, x->value)) {
+		if (t->cmp(value, x->value) < 0)
+			x = x->left;
+		else
+			x = x->right;
+	}
+	return x;
+}
+
+/* __min and __max are so short there's no point in turning them into macros. */
 static inline struct rbtree_node *__rbtree_minimum(struct rbtree *t,
 						   struct rbtree_node *x)
 {
@@ -272,16 +278,9 @@ static inline struct rbtree *make_rbtree(rbtree_cmp_t cmp)
  * match was found. There probably are different ways to implement this, but
  * this should be enough for now. */
 static inline struct rbtree_node *rbtree_search(struct rbtree *t,
-						struct rbtree_node *x,
 						void *value)
 {
-	while (x != t->nil && t->cmp(value, x->value)) {
-		if (t->cmp(value, x->value) < 0)
-			x = x->left;
-		else
-			x = x->right;
-	}
-	return x;
+	return __rbtree_search(t, t->root, value);
 }
 
 /* Iterative lookup. A different way to implement this would be caching the
@@ -297,27 +296,37 @@ static inline struct rbtree_node *rbtree_maximum(struct rbtree *t)
 	return __rbtree_maximum(t, t->root);
 }
 
-/* TODO: implement the predecessor operation. */
-//static inline struct rbtree_node *rbtree_predecessor(struct rbtree *t,
-//						     struct rbtree_node *x)
-//{
-//}
+#define XXXCESSOR(_rbtree, x, dir, func)					\
+										\
+	struct rbtree_node *y;							\
+										\
+	if ((x)->dir != (_rbtree)->nil)						\
+		return __rbtree_ ## func ## imum((_rbtree), (x)->dir);		\
+										\
+	y = (x)->parent;							\
+										\
+	while (y != (_rbtree)->nil && (x) == y->dir) {				\
+		(x) = y;							\
+		y   = y->parent;						\
+	}									\
+	return y
+
+#define PREDECESSOR(_rbtree, x)							\
+	XXXCESSOR((_rbtree), (x), left, max)
+
+#define SUCCESSOR(_rbtree, x)							\
+	XXXCESSOR((_rbtree), (x), right, min)
+
+static inline struct rbtree_node *rbtree_predecessor(struct rbtree *t,
+						     struct rbtree_node *x)
+{
+	PREDECESSOR(t, x);
+}
 
 static inline struct rbtree_node *rbtree_successor(struct rbtree *t,
 						   struct rbtree_node *x)
 {
-	struct rbtree_node *y;
-
-	if (x->right != t->nil)
-		return __rbtree_minimum(t, x->right);
-
-	y = x->parent;
-
-	while (y != t->nil && x == y->right) {
-		x = y;
-		y = y->parent;
-	}
-	return y;
+	SUCCESSOR(t, x);
 }
 
 static inline void rbtree_insert(struct rbtree *t, struct rbtree_node *z)
