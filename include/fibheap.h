@@ -16,13 +16,14 @@
  *
  * Summary of operations for Fibonacci heaps:
  *
- *  - make_fib_heap()			allocates a heap.
- *  - fib_heap_insert()			inserts a node into the root list.
- *  - fib_heap_minimum()		returns the node with the min. key.
- *  - fib_heap_extract_min()		detaches the min. key, then consolidates the heap.
- *  - fib_heap_union()			concatenates the root lists of two heaps.
- *  - fib_heap_decrease_key()		needs a ref. to the modified node.
- *  - fib_heap_delete()			also needs a ref. to the deleted node.
+ *  - make_fibheap()		allocs. a heap.
+ *  - fibheap_is_empty()	asserts if the heap is empty.
+ *  - fibheap_insert()		inserts a node into the root list.
+ *  - fibheap_minimum()		gets the node with the min. key.
+ *  - fibheap_extract_min()	detaches the min. node, then consolidates the heap.
+ *  - fibheap_union()		concats. the root lists of two heaps.
+ *  - fibheap_decrease()	moves the decreased node to the root list.
+ *  - fibheap_delete()		deletes a node, then consolidates the heap.
  *
  * [1] "Introduction to Algorithms", 3rd ed, ch. 19 -- Fibonacci Heaps, by CLRS.
  */
@@ -30,51 +31,52 @@
 #ifndef FIBHEAP_H_
 #define FIBHEAP_H_
 
-#include <stdbool.h>			// For the bool type.
-#include <stdlib.h>			// For malloc().
-#include <math.h>			// For sqrt(), floor(), and log().
+#include <stdbool.h>		// For the bool type.
+#include <stdlib.h>		// For malloc().
+#include <math.h>		// For sqrt(), floor(), and log().
 
 /* CAUTION! Assumes the list doesn't change order. */
-#define FIB_HEAP_FOREACH(runner, list)						\
+#define FIBHEAP_FOREACH(runner, list, nodes, index)				\
 										\
-	struct heap_node *runner, *next;					\
-	bool first;								\
+	struct fibheap_node *(runner), *next;					\
+	int n = (nodes);							\
 										\
-	for (runner = list, next = runner->right, first = true;			\
-	     first || runner != list;						\
-	     first = false, runner = next, next = next->right)
+	for ((runner) = (list), next = (runner)->right, (index) = 0;		\
+	     (index) < n; (runner) = next, next = next->right, (index)++)
 
 /* Nodes are assorted in several circular, doubly linked lists. A node points
  * up to its parent, down to its child(ren), and left and right to its siblings
  * (if any). Nodes in the "root" list have no parent. */
-struct heap_node {
-	struct heap_node *parent;
-	struct heap_node *child;
-	struct heap_node *left;
-	struct heap_node *right;
+struct fibheap_node {
+	struct fibheap_node *parent;
+	struct fibheap_node *child;
+	struct fibheap_node *left;
+	struct fibheap_node *right;
 
 	/* Holds the "value" of the node. */
-	void             *value;
-	int              degree;
-	bool             mark;
+	void                *value;
+	int                 degree;
+	bool                mark;
 };
 
-/* Simply consists of a pointer to the node with the minimal key (which is
+/* For comparing any two nodes. Clients have to define this. Returns negative if
+ * a has higher priority than b. */
+typedef int (*fibheap_cmp_t)(void *a, void *b);
+
+/* Simply consists of a pointer to the node with the minimal value (which is
  * always at the top of the heap) and the number of nodes in the heap. */
-struct heap {
-	struct heap_node *min;
+struct fibheap {
+	struct fibheap_node *min;
 
-	int              n;
+	/* For embedding the comparison function in the tree. */
+	fibheap_cmp_t       cmp;
+
+	int                 n;
 };
 
-/* For comparing any two nodes. Clients have to define this. Return 1 if a has
- * higher priority, and 0 otherwise. */
-typedef int (*fib_heap_cmp_t)(struct heap_node *a, struct heap_node *b);
-
-static inline struct heap_node *make_heap_node(void *value)
+static inline struct fibheap_node *make_fibheap_node(void *value)
 {
-	struct heap_node *node =
-		(struct heap_node *) malloc(sizeof(struct heap_node));
+	struct fibheap_node *node = malloc(sizeof(struct fibheap_node));
 
 	node->value = value;
 
@@ -89,7 +91,7 @@ static inline int ubdeg(int n)
 	return (int) (floor(log(n) / log(phi)));
 }
 
-static inline void list_insert(struct heap_node *u, struct heap_node *v)
+static inline void list_insert(struct fibheap_node *u, struct fibheap_node *v)
 {
 	u->left->right = v;
 	v->right       = u;
@@ -97,16 +99,16 @@ static inline void list_insert(struct heap_node *u, struct heap_node *v)
 	u->left        = v;
 }
 
-static inline void list_remove(struct heap_node *u)
+static inline void list_remove(struct fibheap_node *u)
 {
 	u->left->right = u->right;
 	u->right->left = u->left;
 }
 
 /* For circular lists only; otherwise could loop indefinitely. */
-static inline int list_get_size(struct heap_node *x)
+static inline int list_get_size(struct fibheap_node *x)
 {
-	struct heap_node *runner = x;
+	struct fibheap_node *runner = x;
 	int sz = 0;
 
 	do {
@@ -117,7 +119,7 @@ static inline int list_get_size(struct heap_node *x)
 	return sz;
 }
 
-static inline void link(struct heap_node *y, struct heap_node *x)
+static inline void link(struct fibheap_node *y, struct fibheap_node *x)
 {
 	/* Remove y from the root list of H. */
 	list_remove(y);
@@ -136,39 +138,33 @@ static inline void link(struct heap_node *y, struct heap_node *x)
 	y->mark = false;
 }
 
-/* Uses the length of the list for knowing when to stop. */
-#define FIB_HEAP_FOREACH_NODE_IN_ROOT_LIST(runner, list, index)			\
-										\
-	struct heap_node *runner, *next;					\
-	int n = list_get_size(list);						\
-										\
-	for (runner = list, next = runner->right, index = 0; index < n;		\
-	     runner = next, next = next->right, index++)
+#define FIBHEAP_FOREACH_NODE_IN_ROOT_LIST(w, fibheap, index)			\
+	FIBHEAP_FOREACH((w), (fibheap)->min, list_get_size((fibheap)->min),	\
+			(index))
 
-static inline void consolidate(struct heap *h, fib_heap_cmp_t cmp)
+static inline void consolidate(struct fibheap *h)
 {
+	struct fibheap_node **A, *x, *y, *tmp;
 	int i, d, maxdeg = ubdeg(h->n);
-	struct heap_node **A, *x, *y, *tmp;
 
 	/* Let A[0..D(H.n)] be a new array. */
-	A = (struct heap_node **)
-		malloc((maxdeg + 1) * sizeof(struct heap_node));
+	A = malloc((maxdeg + 1) * sizeof(struct fibheap_node *));
 
 	for (i = 0; i <= maxdeg; i++)
 		A[i] = NULL;
 
-	FIB_HEAP_FOREACH_NODE_IN_ROOT_LIST(w, h->min, i) {
+	FIBHEAP_FOREACH_NODE_IN_ROOT_LIST(w, h, i) {
 		x = w;
 		d = x->degree;
 
 		while (A[d]) {
 			y = A[d]; // Another node with the same degree as x.
 
-			if (cmp(y, x)) {
+			if (h->cmp(y->value, x->value) < 0) {
 				/* Exchange x with y. */
 				tmp = x;
-				x = y;
-				y = tmp;
+				x   = y;
+				y   = tmp;
 			}
 			link(y, x);
 			A[d] = NULL;
@@ -189,7 +185,7 @@ static inline void consolidate(struct heap *h, fib_heap_cmp_t cmp)
 				/* Insert A[i] into h's root list. */
 				list_insert(h->min, A[i]);
 
-				if (cmp(A[i], h->min))
+				if (h->cmp(A[i]->value, h->min->value) < 0)
 					h->min = A[i];
 			}
 			A[i]->parent = NULL;
@@ -198,7 +194,8 @@ static inline void consolidate(struct heap *h, fib_heap_cmp_t cmp)
 	free(A);
 }
 
-static inline void cut(struct heap *h, struct heap_node *x, struct heap_node *y)
+static inline void cut(struct fibheap *h, struct fibheap_node *x,
+		       struct fibheap_node *y)
 {
 	/* Remove x from the child list of y, decrementing y.degree. */
 	list_remove(x);
@@ -206,13 +203,14 @@ static inline void cut(struct heap *h, struct heap_node *x, struct heap_node *y)
 
 	/* Add x to the root list of h. */
 	list_insert(h->min, x);
+
 	x->parent = NULL;
-	x->mark = false;
+	x->mark   = false;
 }
 
-static inline void cascading_cut(struct heap *h, struct heap_node *y)
+static inline void cascading_cut(struct fibheap *h, struct fibheap_node *y)
 {
-	struct heap_node *z = y->parent;
+	struct fibheap_node *z = y->parent;
 
 	if (z) {
 		if (!y->mark) {
@@ -224,27 +222,27 @@ static inline void cascading_cut(struct heap *h, struct heap_node *y)
 	}
 }
 
-static inline struct heap *make_fib_heap()
+static inline struct fibheap *make_fibheap(fibheap_cmp_t cmp)
 {
-	struct heap *h = (struct heap *) malloc(sizeof(struct heap));
+	struct fibheap *heap = malloc(sizeof(struct fibheap));
 
-	h->min = NULL;
-	h->n   = 0;
+	heap->min = NULL;
+	heap->cmp = cmp;
+	heap->n   = 0;
 
-	return h;
+	return heap;
 }
 
-static inline bool fib_heap_is_empty(struct heap *h)
+static inline bool fibheap_is_empty(struct fibheap *h)
 {
 	return h->min == NULL;
 }
 
-static inline void fib_heap_insert(struct heap *h, struct heap_node *x,
-				   fib_heap_cmp_t cmp)
+static inline void fibheap_insert(struct fibheap *h, struct fibheap_node *x)
 {
-	x->degree = 0;
 	x->parent = NULL;
 	x->child  = NULL;
+	x->degree = 0;
 	x->mark   = false;
 
 	if (!h->min) {
@@ -256,28 +254,28 @@ static inline void fib_heap_insert(struct heap *h, struct heap_node *x,
 		/* Insert x into h's root list. */
 		list_insert(h->min, x);
 
-		if (cmp(x, h->min))
+		if (h->cmp(x->value, h->min->value) < 0)
 			h->min = x;
 	}
 	h->n++;
 }
 
-static inline struct heap_node *fib_heap_minimum(struct heap *h)
+static inline struct fibheap_node *fibheap_minimum(struct fibheap *h)
 {
 	return h->min;
 }
 
-#define FIB_HEAP_FOREACH_CHILD(runner, parent)					\
-	FIB_HEAP_FOREACH(runner, parent->child)
+#define FIBHEAP_FOREACH_CHILD(runner, parent, index)				\
+	FIBHEAP_FOREACH((runner), (parent)->child, (parent)->degree, (index))
 
-static inline struct heap_node *fib_heap_extract_min(struct heap *h,
-						     fib_heap_cmp_t cmp)
+static inline struct fibheap_node *fibheap_extract_min(struct fibheap *h)
 {
-	struct heap_node *z = h->min;
+	struct fibheap_node *z = h->min;
+	int i;
 
 	if (z) {
 		if (z->child) {
-			FIB_HEAP_FOREACH_CHILD(x, z) {
+			FIBHEAP_FOREACH_CHILD(x, z, i) {
 				/* Add x to the root list of h. */
 				list_insert(h->min, x);
 				x->parent = NULL;
@@ -290,18 +288,17 @@ static inline struct heap_node *fib_heap_extract_min(struct heap *h,
 			h->min = NULL;
 		} else {
 			h->min = z->right;
-			consolidate(h, cmp);
+			consolidate(h);
 		}
 		h->n--;
 	}
 	return z;
 }
 
-static inline struct heap *fib_heap_union(struct heap *heap1,
-					  struct heap *heap2,
-					  fib_heap_cmp_t cmp)
+static inline struct fibheap *fibheap_union(struct fibheap *heap1,
+					    struct fibheap *heap2)
 {
-	struct heap_node *h1, *h2, *leftmost, *rightmost;
+	struct fibheap_node *h1, *h2, *leftmost, *rightmost;
 
 	if (!heap2 || (heap2 && !heap2->min))
 		return heap1;
@@ -328,7 +325,7 @@ static inline struct heap *fib_heap_union(struct heap *heap1,
 	leftmost->left   = rightmost;
 	rightmost->right = leftmost;
 
-	if (cmp(h2, h1))
+	if (heap1->cmp(h2->value, h1->value) < 0)
 		heap1->min = h2;
 
 	heap1->n += heap2->n;
@@ -337,27 +334,26 @@ static inline struct heap *fib_heap_union(struct heap *heap1,
 	return heap1;
 }
 
-/* FIXME: check if the new value for the node is actually smaller than what it
- *        had before. */
-static inline int fib_heap_decrease(struct heap *h, struct heap_node *x,
-				    fib_heap_cmp_t cmp)
+/* Does _not_ "decrease" the value of the node; clients are responsible for
+ * this, as "value" is dependent on usage. */
+static inline int fibheap_decrease(struct fibheap *h, struct fibheap_node *x)
 {
-	struct heap_node *y = x->parent;
+	struct fibheap_node *y = x->parent;
 
-	if (y && cmp(x, y)) {
+	if (y && h->cmp(x->value, y->value) < 0) {
 		cut(h, x, y);
 		cascading_cut(h, y);
 	}
-	if (cmp(x, h->min))
+	if (h->cmp(x->value, h->min->value) < 0)
 		h->min = x;
 
 	return 0;
 }
 
 /* TODO: properly implement the delete operation. */
-//static inline void fib_heap_delete(struct heap *h, struct heap_node *x)
+//static inline void fibheap_delete(struct fibheap *h, struct fibheap_node *x)
 //{
 //}
 
-#endif
+#endif // FIBHEAP_H_
 
