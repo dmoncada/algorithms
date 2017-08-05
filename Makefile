@@ -1,6 +1,13 @@
 CC      = gcc
 PROG    = prog
-CFLAGS += -Wall -Wextra -pedantic -Werror -std=c99 -I include
+
+# -Wall      Turns on all warnings about constructions.
+# -Wextra    Turns on some extra warning missed by -Wall.
+# -pedantic  Trigger all mandatory diagnostics listed in the C standard.
+# -Werror    Convert warnings into errors.
+# -std=c99   Use the 1999 C standard + GNU extensions.
+# -Iinclude  Search in ./include for headers with #include "file"
+CFLAGS += -Wall -Wextra -pedantic -Werror -std=c99 -Iinclude
 
 vpath %.c src
 vpath %.h include

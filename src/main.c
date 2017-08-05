@@ -52,11 +52,11 @@ struct word words3[] = {
 
 struct word words4[] = {
 	{80, "de"}, {67, " me\n"}, {57, "l'étais"}, {89, "m'accueillent"},
-	{61, "tout"}, {37, " du"}, {12, "m'"}, {84, "de"},
+	{61, "tout"}, {37, " du"}, {12, " m'avait"}, {84, "de"},
 	{72, "me"}, {87, "et"}, {30, " la"}, {40, "l'éprouver"},
 	{86, "exécution"}, {50, " que"}, {39, " De\n"}, {54, "et"},
 	{45, "si"}, {58, "encore."}, {66, " je"}, {38, " monde."},
-	{52, " été\n"}, {63, "consommé,"}, {82, "le"}, {13, "avait"},
+	{52, " été\n"}, {63, "consommé,"}, {82, "le"},
 	{53, "heureux,"}, {55, "que"}, {65, "que"}, {19, "devant"},
 	{62, "soit"}, {79, "beaucoup"}, {5, "tout"}, {25, " et"},
 	{31, " première"}, {77, "y"}, {33, " à"}, {4, "à"},
@@ -76,7 +76,7 @@ static int word_cmp(void *_a, void *_b)
 	a = (struct word *) _a;
 	b = (struct word *) _b;
 
-	return a->key - b->key;
+	return (a->key > b->key) - (a->key < b->key);
 }
 
 static void rbtree_insert_words(struct rbtree *t, struct word *words, int len)
@@ -155,7 +155,7 @@ void test_fibheap()
 	/* Empty the (now merged) heap and print its contents. */
 	while (!fibheap_is_empty(h1)) {
 		n = fibheap_extract_min(h1);
-		printf("%s ", ((struct word *)n->value)->str);
+		printf("%s ", ((struct word *) n->value)->str);
 		free(n);
 	}
 	free(h1);
