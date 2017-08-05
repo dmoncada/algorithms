@@ -5,9 +5,14 @@ PROG    = prog
 # -Wextra    Turns on some extra warning missed by -Wall.
 # -pedantic  Trigger all mandatory diagnostics listed in the C standard.
 # -Werror    Convert warnings into errors.
-# -std=c99   Use the 1999 C standard + GNU extensions.
-# -Iinclude  Search in ./include for headers with #include "file"
+# -std=c99   Use the 1999 C standard.
+# -Iinclude  Search in ./include for headers with #include "file".
 CFLAGS += -Wall -Wextra -pedantic -Werror -std=c99 -Iinclude
+
+# Link the math library if we're compiling in Linux.
+ifeq "$(shell uname --kernel-name)" "Linux"
+	LDFLAGS += -lm
+endif
 
 vpath %.c src
 vpath %.h include
@@ -15,7 +20,7 @@ vpath %.h include
 OBJS = main.o
 
 $(PROG): build_msg $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 
 .PHONY: build_msg clean tags
 
