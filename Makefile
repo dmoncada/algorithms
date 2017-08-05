@@ -10,7 +10,7 @@ PROG    = prog
 CFLAGS += -Wall -Wextra -pedantic -Werror -std=c99 -Iinclude
 
 # Link the math library if we're compiling in Linux.
-ifeq "$(shell uname --kernel-name)" "Linux"
+ifeq "$(shell uname)" "Linux"
 	LDFLAGS += -lm
 endif
 
