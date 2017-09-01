@@ -1,29 +1,29 @@
 /*
  * fibheap.h: Implementation of Fibonacci heaps, which are data structures
- *	      supporting a set of operations that constitutes what are known
- *	      as "mergeable heaps", most of which run in const. amortized time.
+ *            supporting a set of operations that constitutes what are known
+ *            as "mergeable heaps", most of which run in const. amortized time.
  *
- *	      D'après [1]: "A _Fibonacci heap_ is a collection of rooted trees
- *	      that are _min-heap ordered_. That is, each tree obeys the _min-
- *	      heap property_: the key of a node is greater than or equal to the
- *	      key of its parent."
+ *            D'après [1]: "A _Fibonacci heap_ is a collection of rooted trees
+ *            that are _min-heap ordered_. That is, each tree obeys the _min-
+ *            heap property_: the key of a node is greater than or equal to the
+ *            key of its parent."
  *
- *	      The complexity of programming Fibonacci heaps is what makes their
- *	      study compelling mainly from the theoretical perspective. The
- *	      interested reader is encouraged to check [1], pg. 506, under
- *	      "Fibonacci heaps in theory and practice" for a relevant
- *	      discussion.
+ *            The complexity of programming Fibonacci heaps is what makes their
+ *            study compelling mainly from the theoretical perspective. The
+ *            interested reader is encouraged to check [1], pg. 506, under
+ *            "Fibonacci heaps in theory and practice" for a relevant
+ *            discussion.
  *
  * Summary of operations for Fibonacci heaps:
  *
- *  - make_fibheap()		allocs. a heap.
- *  - fibheap_is_empty()	asserts if the heap is empty.
- *  - fibheap_insert()		inserts a node into the root list.
- *  - fibheap_minimum()		gets the node with the min. key.
- *  - fibheap_extract_min()	detaches the min. node, then consolidates the heap.
- *  - fibheap_union()		concats. the root lists of two heaps.
- *  - fibheap_decrease()	moves the decreased node to the root list.
- *  - fibheap_delete()		deletes a node, then consolidates the heap.
+ *  - make_fibheap()            Allocs. a heap.
+ *  - fibheap_is_empty()        Asserts if the heap is empty.
+ *  - fibheap_insert()          Inserts a node into the root list.
+ *  - fibheap_minimum()         Gets the node with the min. key.
+ *  - fibheap_extract_min()     Detaches the min. node, then consolidates the heap.
+ *  - fibheap_union()           Concats. the root lists of two heaps.
+ *  - fibheap_decrease()        Moves the decreased node to the root list.
+ *  - fibheap_delete()          deletes a node, then consolidates the heap.
  *
  * [1] "Introduction to Algorithms", 3rd ed, ch. 19 -- Fibonacci Heaps, by CLRS.
  */
@@ -31,26 +31,26 @@
 #ifndef FIBHEAP_H_
 #define FIBHEAP_H_
 
-#include <limits.h>		// For CHAR_BIT
-#include <stdlib.h>		// For malloc().
-#include <math.h>		// For sqrt(), floor(), and log().
+#include <limits.h>             // For CHAR_BIT
+#include <stdlib.h>             // For malloc().
+#include <math.h>               // For sqrt(), floor(), and log().
 
-#include "list.h"		// For linked list struct. and ops.
+#include "list.h"               // For linked list struct. and ops.
 
 /* Wrappers around linked list ops. */
-#define FIBHEAP_REMOVE_FROM_LIST(_node)						\
+#define FIBHEAP_REMOVE_FROM_LIST(_node)                                         \
 	list_del(&(_node)->list)
 
-#define FIBHEAP_INSERT_INTO_LIST(_node, _list)					\
+#define FIBHEAP_INSERT_INTO_LIST(_node, _list)                                  \
 	list_add(&(_node)->list, &(_list))
 
-#define FIBHEAP_INSERT_INTO_LIST_TAIL(_node, _list)				\
+#define FIBHEAP_INSERT_INTO_LIST_TAIL(_node, _list)                             \
 	list_add_tail(&(_node)->list, &(_list))
 
-#define FIBHEAP_GET_MIN_NODE(_heap)						\
+#define FIBHEAP_GET_MIN_NODE(_heap)                                             \
 	list_first_entry(&(_heap)->root_list, struct fibheap_node, list)
 
-#define FIBHEAP_BECOME_MIN_NODE(_node, _heap)					\
+#define FIBHEAP_BECOME_MIN_NODE(_node, _heap)                                   \
 	list_move(&(_node)->list, &(_heap)->root_list)
 
 /* For manipulating nodes' mark and degree. */

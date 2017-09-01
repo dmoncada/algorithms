@@ -9,15 +9,15 @@
  *
  * Summary of operations for red-black trees:
  *
- *  - make_rbtree()		allocs. a tree.
- *  - rbtree_search()		looks for a node with a specific key.
- *  - rbtree_minimum()		gets the node with the minimal key.
- *  - rbtree_maximum()		gets the node with the maximal key.
- *  - rbtree_predecessor()	gets the preceding node for a specific one.
- *  - rbtree_successor()	gets the following node for a specific one.
- *  - rbtree_insert()		inserts a node, then rebalances the tree.
- *  - rbtree_delete()		deletes a node, then rebalances the tree.
- *  - rbtree_destroy()		deallocs. the tree and all its nodes.
+ *  - make_rbtree()             Allocs. a tree.
+ *  - rbtree_search()           Looks for a node with a specific key.
+ *  - rbtree_minimum()          Gets the node with the minimal key.
+ *  - rbtree_maximum()          Gets the node with the maximal key.
+ *  - rbtree_predecessor()      Gets the preceding node for a specific one.
+ *  - rbtree_successor()        Gets the following node for a specific one.
+ *  - rbtree_insert()           Inserts a node, then rebalances the tree.
+ *  - rbtree_delete()           Deletes a node, then rebalances the tree.
+ *  - rbtree_destroy()          Deallocs. the tree and all its nodes.
  *
  * [1] "Introduction to Algorithms", 3rd ed, ch. 13 -- Red-Black Trees, by CLRS.
  */
@@ -25,24 +25,116 @@
 #ifndef RBTREE_H_
 #define RBTREE_H_
 
-#include <stdlib.h>		// For malloc().
+#include <stdlib.h>             // For malloc().
+
+#define ROTATE(_rbtree, x, dir, opp)                                            \
+                                                                                \
+	do {                                                                    \
+		struct rbtree_node *y;                                          \
+                                                                                \
+		y        = (x)->opp;                                            \
+		(x)->opp = y->dir;                                              \
+                                                                                \
+		if (y->dir != (_rbtree)->nil)                                   \
+			y->dir->parent = (x);                                   \
+                                                                                \
+		y->parent = (x)->parent;                                        \
+		                                                                \
+		if ((x)->parent == (_rbtree)->nil)                              \
+			(_rbtree)->root = y;                                    \
+		else if ((x) == (x)->parent->dir)                               \
+			(x)->parent->dir = y;                                   \
+		else                                                            \
+			(x)->parent->opp = y;                                   \
+                                                                                \
+		y->dir      = (x);                                              \
+		(x)->parent = y;                                                \
+	} while (0)
+
+#define ROTATE_LEFT(_rbtree, x)                                                 \
+	ROTATE((_rbtree), (x), left, right)
+
+#define ROTATE_RIGHT(_rbtree, x)                                                \
+	ROTATE((_rbtree), (x), right, left)
+
+#define INSERT_FIXUP(_rbtree, y, z, dir, opp)                                   \
+                                                                                \
+	do {                                                                    \
+		(y) = (z)->parent->parent->dir;                                 \
+                                                                                \
+		if ((y)->color == RED) {                                        \
+			(z)->parent->color         = BLACK;                     \
+			(y)->color                 = BLACK;                     \
+			(z)->parent->parent->color = RED;                       \
+			(z)                        = (z)->parent->parent;       \
+		} else {                                                        \
+			if ((z) == (z)->parent->dir) {                          \
+				(z) = (z)->parent;                              \
+				rotate_ ## opp((_rbtree), (z));                 \
+			}                                                       \
+			(z)->parent->color         = BLACK;                     \
+			(z)->parent->parent->color = RED;                       \
+			rotate_ ## dir((_rbtree), (z)->parent->parent);         \
+		}                                                               \
+	} while (0)
+
+#define DELETE_FIXUP(_rbtree, w, x, dir, opp)                                   \
+                                                                                \
+	do {                                                                    \
+		(w) = (x)->parent->opp;                                         \
+                                                                                \
+		if ((w)->color == RED) {                                        \
+			(w)->color         = BLACK;                             \
+			(x)->parent->color = RED;                               \
+                                                                                \
+			rotate_ ## dir((_rbtree), (x)->parent);                 \
+			(w) = (x)->parent->opp;                                 \
+		}                                                               \
+		if ((w)->dir->color == BLACK && (w)->opp->color == BLACK) {     \
+			(w)->color = RED;                                       \
+			(x)        = (x)->parent;                               \
+		} else {                                                        \
+			if ((w)->opp->color == BLACK) {                         \
+			        (w)->dir->color = BLACK;                        \
+			        (w)->color      = RED;                          \
+                                                                                \
+			        rotate_ ## opp((_rbtree), (w));                 \
+			        (w) = (x)->parent->opp;                         \
+			}                                                       \
+			(w)->color         = (x)->parent->color;                \
+			(x)->parent->color = BLACK;                             \
+			(w)->opp->color    = BLACK;                             \
+                                                                                \
+			rotate_ ## dir((_rbtree), (x)->parent);                 \
+			        (x) = _rbtree->root;                            \
+		}                                                               \
+	} while (0)
+
+#define XXXCESSOR(_rbtree, x, dir, func)                                        \
+                                                                                \
+	struct rbtree_node *y;                                                  \
+                                                                                \
+	if ((x)->dir != (_rbtree)->nil)                                         \
+		return __rbtree_ ## func ## imum((_rbtree), (x)->dir);          \
+                                                                                \
+	y = (x)->parent;                                                        \
+		                                                                \
+	while (y != (_rbtree)->nil && (x) == y->dir) {                          \
+		(x) = y;                                                        \
+		y   = y->parent;                                                \
+	}                                                                       \
+	return y
+
+#define PREDECESSOR(_rbtree, x)                                                 \
+	XXXCESSOR((_rbtree), (x), left, max)
+
+#define SUCCESSOR(_rbtree, x)                                                   \
+	XXXCESSOR((_rbtree), (x), right, min)
+
+struct rbtree_node;
 
 /* Node colors can be either red or black. */
 typedef enum { RED = 0, BLACK } color_t;
-
-/* As with regular binary trees, nodes point up to their parent and down to
- * their child(ren). In case the nodes had no children, they point down to a
- * special "sink" node termed "NIL". The parent of the root node is NIL. */
-struct rbtree_node {
-	struct rbtree_node *parent;
-	struct rbtree_node *left;
-	struct rbtree_node *right;
-
-	/* Holds the "value" of the node. */
-	void               *value;
-
-	color_t            color;
-};
 
 /* For comparing any two nodes. Clients have to define this. Returns negative if
  * a has a smaller key than b, positive if the other way around, and zero if
@@ -59,6 +151,20 @@ struct rbtree {
 	rbtree_cmp_t       cmp;
 
 	int                n;
+};
+
+/* As with regular binary trees, nodes point up to their parent and down to
+ * their child(ren). In case the nodes had no children, they point down to a
+ * special "sink" node termed "NIL". The parent of the root node is NIL. */
+struct rbtree_node {
+	struct rbtree_node *parent;
+	struct rbtree_node *left;
+	struct rbtree_node *right;
+
+	/* Holds the "value" of the node. */
+	void               *value;
+
+	color_t            color;
 };
 
 static inline struct rbtree_node *make_rbtree_node(void *value)
@@ -89,36 +195,6 @@ static inline struct rbtree_node *make_rbtree_sentinel()
 	return sentinel;
 }
 
-#define ROTATE(_rbtree, x, dir, opp)						\
-										\
-	do {									\
-		struct rbtree_node *y;						\
-										\
-		y        = (x)->opp;						\
-		(x)->opp = y->dir;						\
-										\
-		if (y->dir != (_rbtree)->nil)					\
-			y->dir->parent = (x);					\
-										\
-		y->parent = (x)->parent;					\
-										\
-		if ((x)->parent == (_rbtree)->nil)				\
-			(_rbtree)->root = y;					\
-		else if ((x) == (x)->parent->dir)				\
-			(x)->parent->dir = y;					\
-		else								\
-			(x)->parent->opp = y;					\
-										\
-		y->dir      = (x);						\
-		(x)->parent = y;						\
-	} while (0)
-
-#define ROTATE_LEFT(_rbtree, x)							\
-	ROTATE((_rbtree), (x), left, right)
-
-#define ROTATE_RIGHT(_rbtree, x)						\
-	ROTATE((_rbtree), (x), right, left)
-
 static inline void rotate_left(struct rbtree *t, struct rbtree_node *x)
 {
 	ROTATE_LEFT(t, x);
@@ -128,27 +204,6 @@ static inline void rotate_right(struct rbtree *t, struct rbtree_node *x)
 {
 	ROTATE_RIGHT(t, x);
 }
-
-#define INSERT_FIXUP(_rbtree, y, z, dir, opp)					\
-										\
-	do {									\
-		(y) = (z)->parent->parent->dir;					\
-										\
-		if ((y)->color == RED) {					\
-			(z)->parent->color         = BLACK;			\
-			(y)->color                 = BLACK;			\
-			(z)->parent->parent->color = RED;			\
-			(z)                        = (z)->parent->parent;	\
-		} else {							\
-			if ((z) == (z)->parent->dir) {				\
-				(z) = (z)->parent;				\
-				rotate_ ## opp((_rbtree), (z));			\
-			}							\
-			(z)->parent->color         = BLACK;			\
-			(z)->parent->parent->color = RED;			\
-			rotate_ ## dir((_rbtree), (z)->parent->parent);		\
-		}								\
-	} while (0)
 
 static inline void insert_fixup(struct rbtree *t, struct rbtree_node *z)
 {
@@ -162,38 +217,6 @@ static inline void insert_fixup(struct rbtree *t, struct rbtree_node *z)
 	}
 	t->root->color = BLACK;
 }
-
-#define DELETE_FIXUP(_rbtree, w, x, dir, opp)					\
-										\
-	do {									\
-		(w) = (x)->parent->opp;						\
-										\
-		if ((w)->color == RED) {					\
-			(w)->color         = BLACK;				\
-			(x)->parent->color = RED;				\
-										\
-			rotate_ ## dir((_rbtree), (x)->parent);			\
-			(w) = (x)->parent->opp;					\
-		}								\
-		if ((w)->dir->color == BLACK && (w)->opp->color == BLACK) {	\
-			(w)->color = RED;					\
-			(x)        = (x)->parent;				\
-		} else {							\
-			if ((w)->opp->color == BLACK) {				\
-				(w)->dir->color = BLACK;			\
-				(w)->color      = RED;				\
-										\
-				rotate_ ## opp((_rbtree), (w));			\
-				(w) = (x)->parent->opp;				\
-			}							\
-			(w)->color         = (x)->parent->color;		\
-			(x)->parent->color = BLACK;				\
-			(w)->opp->color    = BLACK;				\
-										\
-			rotate_ ## dir((_rbtree), (x)->parent);			\
-			(x) = _rbtree->root;					\
-		}								\
-	} while (0)
 
 static inline void delete_fixup(struct rbtree *t, struct rbtree_node *x)
 {
@@ -295,27 +318,6 @@ static inline struct rbtree_node *rbtree_maximum(struct rbtree *t)
 {
 	return __rbtree_maximum(t, t->root);
 }
-
-#define XXXCESSOR(_rbtree, x, dir, func)					\
-										\
-	struct rbtree_node *y;							\
-										\
-	if ((x)->dir != (_rbtree)->nil)						\
-		return __rbtree_ ## func ## imum((_rbtree), (x)->dir);		\
-										\
-	y = (x)->parent;							\
-										\
-	while (y != (_rbtree)->nil && (x) == y->dir) {				\
-		(x) = y;							\
-		y   = y->parent;						\
-	}									\
-	return y
-
-#define PREDECESSOR(_rbtree, x)							\
-	XXXCESSOR((_rbtree), (x), left, max)
-
-#define SUCCESSOR(_rbtree, x)							\
-	XXXCESSOR((_rbtree), (x), right, min)
 
 static inline struct rbtree_node *rbtree_predecessor(struct rbtree *t,
 						     struct rbtree_node *x)

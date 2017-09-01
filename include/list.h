@@ -10,13 +10,13 @@
  *
  * Summary of operations for doubly-linked lists:
  *
- *  - list_add()		inserts a node into a list at the head.
- *  - list_add_tail()		inserts a node into a list at the tail.
- *  - list_del()		removes a node from a list.
- *  - list_move()		moves a node to the head of a list.
- *  - list_empty()		asserts if the list is empty.
- *  - list_splice()		attaches one list to another at the head.
- *  - list_splice_tail()	attaches one list to another at the tail.
+ *  - list_add()                Inserts a node into a list at the head.
+ *  - list_add_tail()           Inserts a node into a list at the tail.
+ *  - list_del()                Removes a node from a list.
+ *  - list_move()               Moves a node to the head of a list.
+ *  - list_empty()              Asserts if the list is empty.
+ *  - list_splice()             Attaches one list to another at the head.
+ *  - list_splice_tail()        Attaches one list to another at the tail.
  *
  *  [1] "Linux Kernel Development", ch. 6 -- Kernel Data Structures, under
  *  "Linked Lists, by Robert Love.
@@ -35,50 +35,50 @@ struct list_head {
 /* Static init. of a list_head struct. */
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
-#define LIST_HEAD(name)								\
+#define LIST_HEAD(name)                                                         \
 	struct list_head name = LIST_HEAD_INIT(name)
 
 /* Dynamic init. */
-#define INIT_LIST_HEAD(ptr)							\
-										\
-	do {									\
-		(ptr)->next = (ptr);						\
-		(ptr)->prev = (ptr);						\
+#define INIT_LIST_HEAD(ptr)                                                     \
+                                                                                \
+	do {                                                                    \
+		(ptr)->next = (ptr);                                            \
+		(ptr)->prev = (ptr);                                            \
 	} while (0)
 
-#define container_of(ptr, type, member) __extension__ ({			\
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);			\
+#define container_of(ptr, type, member) __extension__ ({                        \
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);                    \
 	(type *)( (char *)__mptr - offsetof(type,member) );})
 
 #ifndef typeof
 #define typeof __typeof__
 #endif
 
-#define list_entry(ptr, type, member)						\
+#define list_entry(ptr, type, member)                                           \
 	container_of(ptr, type, member)
 
-#define list_first_entry(ptr, type, member)					\
+#define list_first_entry(ptr, type, member)                                     \
 	list_entry((ptr)->next, type, member)
 
-#define list_next_entry(pos, member)						\
+#define list_next_entry(pos, member)                                            \
 	list_entry((pos)->member.next, typeof(*(pos)), member)
 
-#define list_for_each(pos, head)						\
+#define list_for_each(pos, head)                                                \
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
-#define list_for_each_safe(pos, n, head)					\
-	for (pos = (head)->next, n = pos->next; pos != (head);			\
+#define list_for_each_safe(pos, n, head)                                        \
+	for (pos = (head)->next, n = pos->next; pos != (head);                  \
 	     pos = n; n = pos->next)
 
-#define list_for_each_entry(pos, head, member)					\
-	for (pos = list_first_entry(head, typeof(*pos), member);		\
-	     &pos->member != (head);						\
+#define list_for_each_entry(pos, head, member)                                  \
+	for (pos = list_first_entry(head, typeof(*pos), member);                \
+	     &pos->member != (head);                                            \
 	     pos = list_next_entry(pos, member))
 
-#define list_for_each_entry_safe(pos, n, head, member)				\
-	for (pos = list_first_entry(head, typeof(*pos), member),		\
-	     n = list_next_entry(pos, member);					\
-	     &pos->member != (head);						\
+#define list_for_each_entry_safe(pos, n, head, member)                          \
+	for (pos = list_first_entry(head, typeof(*pos), member),                \
+	     n = list_next_entry(pos, member);                                  \
+	     &pos->member != (head);                                            \
 	     pos = n, n = list_next_entry(n, member))
 
 static inline void __list_add(struct list_head *new, struct list_head *prev,
