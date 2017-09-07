@@ -15,7 +15,7 @@ ifeq "$(shell uname)" "Linux"
 endif
 
 # Produce debugging information.
-ifeq ($(DEBUG),y)
+ifeq "$(DEBUG)" "y"
 	CFLAGS += -g
 endif
 
@@ -24,7 +24,7 @@ vpath %.h include
 
 OBJS = main.o
 
-$(PROG): build_msg $(OBJS)
+$(PROG): clean build_msg $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 
 .PHONY: build_msg clean tags

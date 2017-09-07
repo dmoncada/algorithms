@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "rbtree.h"
 #include "fibheap.h"
+#include "patmatch.h"
 
-#define LENGTH(x) (sizeof(x) / sizeof(x[0]))
+#define LEN(x) (sizeof(x) / sizeof(x[0]))
 
 struct word {
 	int        key;
@@ -68,6 +70,8 @@ struct word words4[] = {
 
 struct word dummy_word = {40, "dummy"};
 
+char par[1500];
+
 /* Compare function for both Red-Black tree and Fibonacci heap nodes. */
 static int word_cmp(void *_a, void *_b)
 {
@@ -89,7 +93,7 @@ static void __rbtree_inorder_walk(struct rbtree *t, struct rbtree_node *x)
 {
 	if (x != t->nil) {
 		__rbtree_inorder_walk(t, x->left);
-		printf("%s ", ((struct word *) x->value)->str);
+		sprintf(par, "%s%s ", par, ((struct word *) x->value)->str);
 		__rbtree_inorder_walk(t, x->right);
 	}
 }
@@ -107,8 +111,8 @@ static void test_rbtree()
 	t = make_rbtree(word_cmp);
 
 	/* Insert some words. */
-	rbtree_insert_words(t, words1, LENGTH(words1));
-	rbtree_insert_words(t, words3, LENGTH(words3));
+	rbtree_insert_words(t, words1, LEN(words1));
+	rbtree_insert_words(t, words3, LEN(words3));
 
 	n = make_rbtree_node(&dummy_word);
 
@@ -118,7 +122,7 @@ static void test_rbtree()
 	/* Now get rid of it! */
 	rbtree_delete(t, n);
 
-	/* Dump the contents of the tree. */
+	/* Dump the contents of the tree in the paragraph. */
 	rbtree_inorder_walk(t);
 
 	/* Finally, dump the tree itself. */
@@ -131,7 +135,7 @@ static void fibheap_insert_words(struct fibheap *h, struct word *words, int len)
 		fibheap_insert(h, make_fibheap_node(words + i));
 }
 
-void test_fibheap()
+static void test_fibheap()
 {
 	struct fibheap *h1, *h2;
 	struct fibheap_node *n;
@@ -140,8 +144,8 @@ void test_fibheap()
 	h2 = make_fibheap(word_cmp);
 
 	/* Insert some words. */
-	fibheap_insert_words(h1, words2, LENGTH(words2));
-	fibheap_insert_words(h2, words4, LENGTH(words4));
+	fibheap_insert_words(h1, words2, LEN(words2));
+	fibheap_insert_words(h2, words4, LEN(words4));
 
 	n = make_fibheap_node(&dummy_word);
 
@@ -152,14 +156,34 @@ void test_fibheap()
 	/* Join the two heaps together. */
 	fibheap_union(h1, h2);
 
-	/* Empty the (now merged) heap and print its contents. */
+	/* Empty the (now merged) heap and add its contents to the paragraph. */
 	while (!fibheap_is_empty(h1)) {
 		n = fibheap_extract_min(h1);
-		printf("%s ", ((struct word *) n->value)->str);
+		sprintf(par, "%s%s ", par, ((struct word *) n->value)->str);
 		free(n);
 	}
 	free(h1);
 	free(h2);
+}
+
+static void test_patmatch()
+{
+	const char *pats[] = {"que", "première", "coiffeur"};
+	int        len     = LEN(pats);
+
+	for (int i = 0; i < len; i++) {
+		const char *pat = pats[i];
+
+		/* Match the pattern using the Rabin-Karp algorithm. */
+		unsigned int occur = rk_matcher(par, pat);
+
+		if (occur)
+			printf("The word \"%s\" occurs %i %s in the paragraph.\n",
+			       pat, occur, occur > 1 ? "times" : "time");
+		else
+			printf("The word \"%s\" does not occur in the paragraph.\n",
+			       pat);
+	}
 }
 
 int main(int argc __attribute__ ((unused)),
@@ -169,7 +193,9 @@ int main(int argc __attribute__ ((unused)),
 
 	test_rbtree();
 	test_fibheap();
+	printf("%s\n", par);
 
+	test_patmatch();
 	printf("\n");
 
 	/* Smile, it's good for you. */
