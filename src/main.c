@@ -3,7 +3,7 @@
 
 #include "rbtree.h"
 #include "fibheap.h"
-#include "patmatch.h"
+#include "strmatch.h"
 
 #define LEN(x) (sizeof(x) / sizeof(x[0]))
 
@@ -14,11 +14,11 @@ struct word {
 
 struct word words1[] = {
 	{10, "à"}, {34, "recommencer."}, {35, "Là-bas,"}, {62, " libérée"},
-	{24, "elle"}, {31, "avait"}, {30, "elle"}, {79, " aussi,"},
+	{24, " elle"}, {31, "avait"}, {30, "elle"}, {79, " aussi,"},
 	{18, "pourquoi"}, {14, " semblé\n"}, {72, "droit"}, {60, "s'y"},
 	{27, " un"}, {56, "la"}, {55, "de"}, {43, "des"},
 	{46, "le"}, {64, " prête"}, {11, "maman."}, {54, "près"},
-	{7, "longtemps,"}, {75, "sur"}, {71, "le"}, {23, "vie"},
+	{7, "longtemps,"}, {75, "sur"}, {71, "le"}, {23, " vie"},
 	{32, "joué"}, {8, "j'ai"}, {81, " me\n"}, {57, "morte,"},
 	{77, "Et"}, {68, "Personne,"}, {48, "était"}, {40, " cet\n"},
 	{53, " Si\n"}, {20, "la"}, {51, "trêve"}, {38, " autour"}
@@ -43,11 +43,11 @@ struct word words3[] = {
 	{52, "mélancolique."}, {61, "sentir"}, {74, "pleurer"}, {58, "maman"},
 	{4, "fois"}, {16, "je"}, {12, "Il"}, {39, " de"},
 	{65, " à"}, {5, "depuis"}, {19, "à"}, {15, "que"},
-	{49, "comme"}, {3, "première"}, {26, "pris"}, {28, " << fiancé >>,\n"},
+	{49, "comme"}, {3, "première"}, {26, " pris"}, {28, " «fiancé»,\n"},
 	{70, "n'avait"}, {33, "à"}, {69, "personne"}, {41, "asile"},
 	{45, "s'eteignaient,"}, {9, "pensé"}, {47, "soir"}, {21, "fin"},
 	{42, "où"}, {6, "bien"}, {2, "la"}, {36, " là-bas"},
-	{73, "de"}, {25, "avait"}, {76, "elle."}, {37, " aussi,"},
+	{73, "de"}, {25, " avait"}, {76, "elle."}, {37, " aussi,"},
 	{80, " je"}, {50, "une"}, {17, "comprenais"}, {66, " tout"},
 	{59, "devait"}, {1, " Pour"}, {78, " moi"}, {22, "d'une"}, {44, "vies"}
 };
@@ -168,14 +168,14 @@ static void test_fibheap()
 
 static void test_patmatch()
 {
-	const char *pats[] = {"que", "première", "coiffeur"};
+	const char *pats[] = { "que", "première", "coiffeur" };
 	int        len     = LEN(pats);
 
 	for (int i = 0; i < len; i++) {
 		const char *pat = pats[i];
 
 		/* Match the pattern using the Rabin-Karp algorithm. */
-		unsigned int occur = rk_matcher(par, pat);
+		int occur = strmatch_rk(par, pat);
 
 		if (occur)
 			printf("The word \"%s\" occurs %i %s in the paragraph.\n",

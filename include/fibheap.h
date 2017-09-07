@@ -25,7 +25,7 @@
  *  - fibheap_decrease()        Moves the decreased node to the root list.
  *  - fibheap_delete()          deletes a node, then consolidates the heap.
  *
- * [1] "Introduction to Algorithms", 3rd ed, ch. 19 -- Fibonacci Heaps, by CLRS.
+ * [1] "Introduction to Algorithms", 3rd ed, ch. 19: Fibonacci Heaps, by CLRS.
  */
 
 #ifndef FIBHEAP_H_

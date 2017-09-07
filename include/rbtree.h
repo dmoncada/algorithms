@@ -19,7 +19,7 @@
  *  - rbtree_delete()           Deletes a node, then rebalances the tree.
  *  - rbtree_destroy()          Deallocs. the tree and all its nodes.
  *
- * [1] "Introduction to Algorithms", 3rd ed, ch. 13 -- Red-Black Trees, by CLRS.
+ * [1] "Introduction to Algorithms", 3rd ed, ch. 13: Red-Black Trees, by CLRS.
  */
 
 #ifndef RBTREE_H_

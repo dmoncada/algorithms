@@ -18,8 +18,8 @@
  *  - list_splice()             Attaches one list to another at the head.
  *  - list_splice_tail()        Attaches one list to another at the tail.
  *
- *  [1] "Linux Kernel Development", ch. 6 -- Kernel Data Structures, under
- *  "Linked Lists, by Robert Love.
+ *  [1] "Linux Kernel Development", ch. 6: Kernel Data Structures, under
+ *  "Linked Lists", by Robert Love.
  */
 
 #ifndef LIST_H_

@@ -10,12 +10,12 @@ PROG    = prog
 CFLAGS += -Wall -Wextra -pedantic -Werror -std=c99 -Iinclude
 
 # Link the math library if we're compiling in Linux.
-ifeq "$(shell uname)" "Linux"
+ifeq '$(shell uname)' 'Linux'
 	LDFLAGS += -lm
 endif
 
 # Produce debugging information.
-ifeq "$(DEBUG)" "y"
+ifneq '$(filter $(DEBUG),Y YES Yes y yes)' ''
 	CFLAGS += -g
 endif
 
@@ -30,13 +30,13 @@ $(PROG): clean build_msg $(OBJS)
 .PHONY: build_msg clean tags
 
 build_msg:
-	@echo "make: building $(PROG)..."
+	@echo 'make: building $(PROG)...'
 
 clean:
-	@echo "make: cleaning..."
+	@echo 'make: cleaning...'
 	@rm -f *.o $(PROG) tags
 
 tags:
-	@echo "make: building tags..."
+	@echo 'make: building tags...'
 	@ctags -R
 
