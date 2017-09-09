@@ -1,5 +1,11 @@
-CC      = gcc
-PROG    = prog
+CC     := gcc
+OUT    := algs
+
+SRCDIR := src
+OBJDIR := obj
+
+_OBJS  := $(subst .c,.o,$(wildcard $(SRCDIR)/*.c))
+OBJS   := $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(_OBJS))
 
 # -Wall      Turns on all warnings about constructions.
 # -Wextra    Turns on some extra warning missed by -Wall.
@@ -19,24 +25,20 @@ ifneq '$(filter $(DEBUG),Y YES Yes y yes)' ''
 	CFLAGS += -g
 endif
 
-vpath %.c src
-vpath %.h include
+.PHONY: all clean
 
-OBJS = main.o
+all: $(OUT)
 
-$(PROG): clean build_msg $(OBJS)
+$(OUT): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 
-.PHONY: build_msg clean tags
-
-build_msg:
-	@echo 'make: building $(PROG)...'
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(OBJDIR) # Won't fail if OBJDIR already exists.
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	@echo 'make: cleaning...'
-	@rm -f *.o $(PROG) tags
+	@rm -fr $(OBJDIR) $(OUT) # Won't fail if OBJDIR doesn't exist.
 
-tags:
-	@echo 'make: building tags...'
-	@ctags -R
+print-%: # For printing the value of a make variable.
+	@echo '$*=$($*)'
 

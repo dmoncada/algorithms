@@ -18,8 +18,8 @@
  *  - list_splice()             Attaches one list to another at the head.
  *  - list_splice_tail()        Attaches one list to another at the tail.
  *
- *  [1] "Linux Kernel Development", ch. 6: Kernel Data Structures, under
- *  "Linked Lists", by Robert Love.
+ *  [1] "Linux Kernel Development", ch. 6: Kernel Data Structures, under "Linked
+ *  Lists", by Robert Love.
  */
 
 #ifndef LIST_H_
@@ -32,13 +32,11 @@ struct list_head {
 	struct list_head *prev;
 };
 
-/* Static init. of a list_head struct. */
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
 #define LIST_HEAD(name)                                                         \
 	struct list_head name = LIST_HEAD_INIT(name)
 
-/* Dynamic init. */
 #define INIT_LIST_HEAD(ptr)                                                     \
                                                                                 \
 	do {                                                                    \
@@ -81,74 +79,21 @@ struct list_head {
 	     &pos->member != (head);                                            \
 	     pos = n, n = list_next_entry(n, member))
 
-static inline void __list_add(struct list_head *new, struct list_head *prev,
-			      struct list_head *next)
-{
-	next->prev = new;
-	new->next  = next;
-	new->prev  = prev;
-	prev->next = new;
-}
-
-static inline void __list_del(struct list_head *prev, struct list_head *next)
-{
-	next->prev = prev;
-	prev->next = next;
-}
-
-static inline void __list_splice(struct list_head *list, struct list_head *prev,
-				 struct list_head *next)
-{
-	struct list_head *first = list->next;
-	struct list_head *last  = list->prev;
-
-	first->prev = prev;
-	prev->next  = first;
-	last->next  = next;
-	next->prev  = last;
-}
-
 /* --- API --- */
 
-static inline void list_add(struct list_head *new, struct list_head *head)
-{
-	__list_add(new, head, head->next);
-}
+void list_add(struct list_head *, struct list_head *);
 
-static inline void list_add_tail(struct list_head *new, struct list_head *head)
-{
-	__list_add(new, head->prev, head);
-}
+void list_add_tail(struct list_head *, struct list_head *);
 
-static inline void list_del(struct list_head *entry)
-{
-	__list_del(entry->prev, entry->next);
-}
+void list_del(struct list_head *);
 
-static inline void list_move(struct list_head *list, struct list_head *head)
-{
-	__list_del(list->prev, list->next);
-	list_add(list, head);
-}
+void list_move(struct list_head *, struct list_head *);
 
-static inline int list_empty(struct list_head *head)
-{
-	return head->next == head;
-}
+int list_empty(struct list_head *);
 
-static inline void list_splice(struct list_head *list,
-			       struct list_head *head)
-{
-	if (!list_empty(list))
-		__list_splice(list, head, head->next);
-}
+void list_splice(struct list_head *, struct list_head *);
 
-static inline void list_splice_tail(struct list_head *list,
-			       struct list_head *head)
-{
-	if (!list_empty(list))
-		__list_splice(list, head->prev, head);
-}
+void list_splice_tail(struct list_head *, struct list_head *);
 
-#endif
+#endif // LIST_H_
 
