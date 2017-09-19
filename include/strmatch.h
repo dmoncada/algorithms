@@ -30,4 +30,3 @@
 int strmatch_rk(char *, const char *);
 
 #endif // STRMATCH_H_
-

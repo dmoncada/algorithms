@@ -96,4 +96,3 @@ void list_splice(struct list_head *, struct list_head *);
 void list_splice_tail(struct list_head *, struct list_head *);
 
 #endif // LIST_H_
-

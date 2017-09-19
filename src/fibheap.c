@@ -125,7 +125,7 @@ static inline void cascading_cut(struct fibheap *h, struct fibheap_node *y)
 
 /* --- API --- */
 
-struct fibheap *make_fibheap(fibheap_cmp_t cmp)
+struct fibheap *make_fibheap(fibheap_cmp cmp)
 {
 	struct fibheap *heap = malloc(sizeof(struct fibheap));
 
@@ -264,4 +264,3 @@ void fibheap_delete(struct fibheap *h, struct fibheap_node *x)
 	/* Finally, the node is extracted from the heap. */
 	fibheap_extract_min(h);
 }
-

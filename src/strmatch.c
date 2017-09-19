@@ -65,4 +65,3 @@ int strmatch_rk(char *txt, const char *pat)
 
 	return __strmatch_rk(txt, pat, d, p);
 }
-

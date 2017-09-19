@@ -36,7 +36,7 @@ typedef enum { RED = 0, BLACK } color_t;
 /* For comparing any two nodes. Clients have to define this. Returns negative if
  * a has a smaller key than b, positive if the other way around, and zero if
  * they're equal. */
-typedef int (*rbtree_cmp_t)(void *a, void *b);
+typedef int (*rbtree_cmp)(void *a, void *b);
 
 /* Simply consists of a pointer to the root node and the number of nodes in the
  * tree. Also, NIL is contained within the tree. */
@@ -44,7 +44,7 @@ struct rbtree {
 	struct rbtree_node *root;
 	struct rbtree_node *nil;
 
-	rbtree_cmp_t       cmp;
+	rbtree_cmp         cmp;
 	int                n;
 };
 
@@ -64,7 +64,7 @@ struct rbtree_node {
 
 /* --- API --- */
 
-struct rbtree *make_rbtree(rbtree_cmp_t);
+struct rbtree *make_rbtree(rbtree_cmp);
 
 struct rbtree_node *make_rbtree_node(void *);
 
@@ -85,4 +85,3 @@ void rbtree_delete(struct rbtree *, struct rbtree_node *);
 void rbtree_destroy(struct rbtree *);
 
 #endif // RBTREE_H_
-

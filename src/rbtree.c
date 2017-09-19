@@ -210,7 +210,7 @@ static inline void __rbtree_destroy(struct rbtree *t, struct rbtree_node *x)
 
 /* --- API --- */
 
-struct rbtree *make_rbtree(rbtree_cmp_t cmp)
+struct rbtree *make_rbtree(rbtree_cmp cmp)
 {
 	struct rbtree *tree = malloc(sizeof(struct rbtree));
 
@@ -344,4 +344,3 @@ void rbtree_destroy(struct rbtree *t)
 	free(t->nil);
 	free(t);
 }
-

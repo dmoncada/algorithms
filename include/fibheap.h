@@ -40,7 +40,7 @@
 
 /* For comparing any two nodes. Clients have to define this. Should return
  * negative if a has higher priority than b. */
-typedef int (*fibheap_cmp_t)(void *a, void *b);
+typedef int (*fibheap_cmp)(void *a, void *b);
 
 /* Nodes are accessed by means of the heap's root list, which is implemented as
  * a circular, doubly-linked list whose head node connects to the heap node with
@@ -54,7 +54,7 @@ struct fibheap {
 	 * For setting a new min. node, use FIBHEAP_BECOME_MIN_NODE(). */
 	struct list_head root_list;
 
-	fibheap_cmp_t    cmp;
+	fibheap_cmp      cmp;
 	int              n;
 };
 
@@ -83,7 +83,7 @@ struct fibheap_node {
 
 /* --- API --- */
 
-struct fibheap *make_fibheap(fibheap_cmp_t);
+struct fibheap *make_fibheap(fibheap_cmp);
 
 struct fibheap_node *make_fibheap_node(void *);
 
@@ -102,4 +102,3 @@ void fibheap_decrease(struct fibheap *, struct fibheap_node *);
 void fibheap_delete(struct fibheap *, struct fibheap_node *);
 
 #endif // FIBHEAP_H_
-

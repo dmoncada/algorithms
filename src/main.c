@@ -1,11 +1,15 @@
 #include <stdio.h>
+#include <ctype.h>
 #include <string.h>
 
+#include "hash.h"
 #include "rbtree.h"
 #include "fibheap.h"
 #include "strmatch.h"
 
 #define LEN(x) (sizeof(x) / sizeof(x[0]))
+#define PRIME  101
+#define MASK   0xFF
 
 struct word {
 	int        key;
@@ -70,9 +74,48 @@ struct word words4[] = {
 
 struct word dummy_word = {40, "dummy"};
 
-char par[1500];
+struct hash_table *dict;
 
-/* Compare function for both Red-Black tree and Fibonacci heap nodes. */
+char buf[1500]; // For joining individual words.
+
+char tmp[50];   // For temporarily holding stripped words.
+
+struct word_count {
+	char             *key;
+	int              value;
+
+	struct list_head list;
+};
+
+/* Strips src from spaces and punctuation, and places the result in dst. */
+static char *strip(const char *src, char *dst)
+{
+	char c, *d = dst; // d is a runner.
+
+	while ((c = *src++))
+		if (!isspace(c) && !ispunct(c))
+			*d++ = tolower(c & MASK);
+
+	*d = 0;
+
+	return dst;
+}
+
+static struct word_count *make_word_count(const char *word)
+{
+	struct word_count *wc = malloc(sizeof(struct word_count));
+	char *stripped = strip(word, tmp);
+
+	wc->key = malloc((strlen(stripped) + 1) * sizeof(char));
+	strcpy(wc->key, stripped);
+
+	wc->value = 1;
+
+	INIT_LIST_HEAD(&wc->list);
+
+	return wc;
+}
+
 static int word_cmp(void *_a, void *_b)
 {
 	struct word *a, *b;
@@ -93,7 +136,11 @@ static void __rbtree_inorder_walk(struct rbtree *t, struct rbtree_node *x)
 {
 	if (x != t->nil) {
 		__rbtree_inorder_walk(t, x->left);
-		sprintf(par, "%s%s ", par, ((struct word *) x->value)->str);
+
+		const char *w = ((struct word *) x->value)->str;
+		hash_insert(dict, make_word_count(w));
+		sprintf(buf, "%s%s ", buf, w);
+
 		__rbtree_inorder_walk(t, x->right);
 	}
 }
@@ -103,18 +150,17 @@ static void rbtree_inorder_walk(struct rbtree *t)
 	__rbtree_inorder_walk(t, t->root);
 }
 
+/* Inserts randomly ordered words in a red-black tree. These are then dumped in
+ * a temporary buffer (now in the right order) and inserted in a dictionary for
+ * registering the number of times they appear. */
 static void test_rbtree()
 {
-	struct rbtree *t;
-	struct rbtree_node *n;
-
-	t = make_rbtree(word_cmp);
+	struct rbtree *t = make_rbtree(word_cmp);
+	struct rbtree_node *n = make_rbtree_node(&dummy_word);
 
 	/* Insert some words. */
 	rbtree_insert_words(t, words1, LEN(words1));
 	rbtree_insert_words(t, words3, LEN(words3));
-
-	n = make_rbtree_node(&dummy_word);
 
 	/* Insert a word not belonging to the paragraph. */
 	rbtree_insert(t, n);
@@ -122,7 +168,7 @@ static void test_rbtree()
 	/* Now get rid of it! */
 	rbtree_delete(t, n);
 
-	/* Dump the contents of the tree in the paragraph. */
+	/* Dump the contents of the tree in the buffer and dictionary. */
 	rbtree_inorder_walk(t);
 
 	/* Finally, dump the tree itself. */
@@ -135,10 +181,14 @@ static void fibheap_insert_words(struct fibheap *h, struct word *words, int len)
 		fibheap_insert(h, make_fibheap_node(words + i));
 }
 
+/* Inserts a different set of words (also in a random order) in different
+ * fibonacci heaps. Heaps are then merged and their contents emptied in the same
+ * buffer and dictionary. */
 static void test_fibheap()
 {
 	struct fibheap *h1, *h2;
-	struct fibheap_node *n;
+	struct fibheap_node *n = make_fibheap_node(&dummy_word);
+	const char *w;
 
 	h1 = make_fibheap(word_cmp);
 	h2 = make_fibheap(word_cmp);
@@ -147,58 +197,145 @@ static void test_fibheap()
 	fibheap_insert_words(h1, words2, LEN(words2));
 	fibheap_insert_words(h2, words4, LEN(words4));
 
-	n = make_fibheap_node(&dummy_word);
-
 	/* Trigger heap consolidation by inserting a word, then deleting it. */
 	fibheap_insert(h1, n);
 	fibheap_delete(h1, n);
 
-	/* Join the two heaps together. */
+	/* Merge the two heaps together. */
 	fibheap_union(h1, h2);
 
-	/* Empty the (now merged) heap and add its contents to the paragraph. */
+	/* Empty the (now merged) heap and add its contents to the buffer. */
 	while (!fibheap_is_empty(h1)) {
 		n = fibheap_extract_min(h1);
-		sprintf(par, "%s%s ", par, ((struct word *) n->value)->str);
+		w = ((struct word *) n->value)->str;
+		hash_insert(dict, make_word_count(w));
+		sprintf(buf, "%s%s ", buf, w);
 		free(n);
 	}
 	free(h1);
 	free(h2);
 }
 
+/* Prints the number of times a few patterns are found in the buffer. */
 static void test_patmatch()
 {
-	const char *pats[] = { "que", "première", "coiffeur" };
-	int        len     = LEN(pats);
+	const char *pat, *pats[] = { "que", "première", "coiffeur" };
+	int i, len = LEN(pats), occur;
 
-	for (int i = 0; i < len; i++) {
-		const char *pat = pats[i];
+	for (i = 0; i < len; i++) {
+		pat = pats[i];
 
 		/* Match the pattern using the Rabin-Karp algorithm. */
-		int occur = strmatch_rk(par, pat);
+		occur = strmatch_rk(buf, pat);
+
+		printf("The pattern \"%s\" ", pat);
 
 		if (occur)
-			printf("The word \"%s\" occurs %i %s in the paragraph.\n",
-			       pat, occur, occur > 1 ? "times" : "time");
+			printf("occurs %i time(s) ", occur);
 		else
-			printf("The word \"%s\" does not occur in the paragraph.\n",
-			       pat);
+			printf("does not occur ");
+
+		printf("in the paragraph.\n");
 	}
+	printf("\n");
+}
+
+static unsigned int word_count_hash(void *word)
+{
+	unsigned int c, ret = 1;
+	char *w = (char *) word;
+
+	while ((c = *w++))
+		ret = (ret * c) % PRIME;
+
+	return ret;
+}
+
+void hash_insert(struct hash_table *ht, void *entry)
+{
+	struct word_count *wc, *_wc = (struct word_count *) entry;
+	char *stripped = strip(_wc->key, tmp);
+	int idx = ht->func(stripped);
+
+	/* If the word is already in the dictionary, increase its count. */
+	list_for_each_entry(wc, &ht->table[idx], list) {
+		if (!strcmp(stripped, wc->key)) {
+			wc->value++;
+			free(_wc->key);
+			free(_wc);
+			return;
+		}
+	}
+	list_add(&_wc->list, &ht->table[idx]);
+}
+
+static int word_count_cmp(void *_a, void *_b)
+{
+	struct word_count *a, *b;
+
+	a = (struct word_count *) _a;
+	b = (struct word_count *) _b;
+
+	return (b->value > a->value) - (b->value < a->value);
+}
+
+/* Finds the most repeated words in the buffer. */
+static void test_hash()
+{
+	struct word_count *wc, *next;
+	struct fibheap *h = make_fibheap(word_count_cmp);
+	struct fibheap_node *hn;
+	int i, n = 10, sz = PRIME;
+
+	printf("Here are the %i most repeated words in the paragraph:\n\n", n);
+
+	/* Insert the counts in a heap; higher counts mean higher priority. */
+	for (i = 0; i < sz; i++) {
+		list_for_each_entry_safe(wc, next, &dict->table[i], list) {
+			fibheap_insert(h, make_fibheap_node(wc));
+			list_del(&wc->list);
+		}
+	}
+	i = 0;
+
+	/* Dump the top n elements of the heap. */
+	while (!fibheap_is_empty(h)) {
+		hn = fibheap_extract_min(h);
+		wc = (struct word_count *) hn->value;
+
+		if (i++ < n)
+			printf(" Word: \"%s\", frequency: %i\n",
+			       wc->key, wc->value);
+
+		free(wc->key);
+		free(wc);
+		free(hn);
+	}
+	free(h);
 }
 
 int main(int argc __attribute__ ((unused)),
 	 const char **argv __attribute__ ((unused)))
 {
+	/* A small test case for the implemented algorithms and data structures.
+	 * A set of words are sorted and printed such that together make sense. */
+
+	int sz = PRIME;
+
+	dict = make_hash_table(sz, word_count_hash);
+
 	printf("For those who like Camus:\n\n");
 
 	test_rbtree();
 	test_fibheap();
-	printf("%s\n", par);
+
+	printf("%s\n", buf);
 
 	test_patmatch();
+	test_hash();
+
 	printf("\n");
 
 	/* Smile, it's good for you. */
 	return 0;
 }
-
