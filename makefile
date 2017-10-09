@@ -33,12 +33,11 @@ $(OUT): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@mkdir -p $(OBJDIR) # Won't fail if OBJDIR already exists.
+	@mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	@rm -fr $(OBJDIR) $(OUT) # Won't fail if OBJDIR doesn't exist.
+	@rm -fr $(OBJDIR) $(OUT)
 
-print-%: # For printing the value of a make variable.
+print-%:
 	@echo '$*=$($*)'
-
