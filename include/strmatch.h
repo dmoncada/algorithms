@@ -23,7 +23,7 @@
 #ifndef STRMATCH_H_
 #define STRMATCH_H_
 
-#include <string.h>
+#include <string.h>             // For strlen().
 
 /* --- API --- */
 

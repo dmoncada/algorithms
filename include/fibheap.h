@@ -19,12 +19,12 @@
  *  - make_fibheap()            Allocs. a heap.
  *  - make_fibheap_node()       Allocs. a heap node.
  *  - fibheap_is_empty()        Asserts if the heap is empty.
- *  - fibheap_insert()          Inserts a node into the root list.
- *  - fibheap_minimum()         Gets the node with the min. key.
+ *  - fibheap_insert()          Inserts a node into the heap's root list.
+ *  - fibheap_minimum()         Peeks at the top of the heap.
  *  - fibheap_extract_min()     Detaches the min. node, then consolidates the heap.
- *  - fibheap_union()           Concats. the root lists of two heaps.
- *  - fibheap_decrease()        Moves the decreased node to the root list.
- *  - fibheap_delete()          deletes a node, then consolidates the heap.
+ *  - fibheap_union()           Concatenates the root lists of two heaps.
+ *  - fibheap_decrease()        Moves the decreased node to the heap's root list.
+ *  - fibheap_delete()          Deletes a node, then consolidates the heap.
  *
  * [1] "Introduction to Algorithms", 3rd ed, ch. 19: Fibonacci Heaps, by CLRS.
  */
@@ -51,7 +51,7 @@ struct fibheap {
 	 * insertions to the root list should be done at the tail. Only when the
 	 * list is empty can one insert node at the head.
 	 *
-	 * For setting a new min. node, use FIBHEAP_BECOME_MIN_NODE(). */
+	 * For setting a new min. node, use the BECOME_MIN_NODE() macro. */
 	struct list_head root_list;
 
 	fibheap_cmp      cmp;
@@ -60,12 +60,12 @@ struct fibheap {
 
 /* Nodes are assorted in several circular, doubly linked lists. Conceptually, a
  * node points up to its parent, down to its child(ren), and left and right to
- * its siblings (if any). Nodes in the "root" list have no parent. */
+ * its siblings (if any). Nodes in the root list have no parent. */
 struct fibheap_node {
 	struct fibheap_node *parent;
 
-	struct list_head    child; // Connects the node to its children.
-	struct list_head    list;  // Connects the node to its siblings.
+	struct list_head    child;  // Connects the node to its children.
+	struct list_head    list;   // Connects the node to its siblings.
 
 	/* A single bit (the leftmost one) of this member is used as the boolean
 	 * mark needed for the cascading cut op. Thus, some space per node is

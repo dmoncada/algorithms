@@ -1,58 +1,61 @@
 #include <strmatch.h>
 
-#define ALPH_SZ     2048 // Account for all one- and two-byte utf-8 chars.
-#define LARGE_PRIME 497  // So that d * q fits within one computer word.
+#define ALPH_SZ     2048  // Account for all one- and two-byte utf-8 chars.
+#define LARGE_PRIME 497   // So that d * q fits within one computer word.
 
-/* Performs modular exponentiation: (base ^ exp) % mod */
+/* Performs modular exponentiation: (base ^ exp) % mod. */
 static inline int mod_exp(int base, int exp, int mod)
 {
+	int ret = 1;
+
 	if (mod == 1)
 		return 0;
 
-	int ret = 1;
 	base %= mod;
 
-	while (exp > 0) {
-		if (exp % 2 == 1)
+	for (; exp; exp >>= 1) {
+		if (exp & 1)
 			ret = (ret * base) % mod;
+
 		base = (base * base) % mod;
-		exp >>= 1;
 	}
+
 	return ret;
 }
 
-/* Finds the numbers of times pattern _pat_ is found in text _txt_. */
+/* Counts the numbers of times _pat_ is found in _txt_. */
 static inline int __strmatch_rk(char *txt, const char *pat, int d, int q)
 {
-	int n = strlen(txt);          // Length of the text.
-	int m = strlen(pat);          // Length of the pattern.
-	int h = mod_exp(d, m - 1, q); // Value of the higher order char.
-	int p = 0;                    // Hash of pattern.
-	int t = 0;                    // Hash of each m-char substring of the text.
-	int i, s;
+	int n = strlen(txt);           // Length of the text.
+	int m = strlen(pat);           // Length of the pattern.
+	int h = mod_exp(d, m - 1, q);  // Value of the higher order char.
+	int p = 0;                     // Hash of pattern.
+	int t = 0;                     // Hash of each m-char substring of the text.
+	int i, j, matches = 0;
 
 	for (i = 0; i < m; i++) {
 		p = (d * p + pat[i]) % q;
 		t = (d * t + txt[i]) % q;
 	}
-	int matches = 0;
 
-	for (s = 0; s <= n - m; s++) {
+	for (i = 0; i <= n - m; i++) {
 		if (p == t) {
-			for (i = 0; i < m; i++)
-				if (txt[s + i] != pat[i])
+			for (j = 0; j < m; j++)
+				if (txt[i + j] != pat[j])
 					break;
 
-			if (i == m)
+			if (j == m)
 				matches++;
 		}
-		if (s < n - m) {
-			t = (d * (t - (txt[s]) * h) + txt[s + m]) % q;
+
+		if (i < n - m) {
+			t = (d * (t - h * txt[i]) + txt[i + m]) % q;
 
 			if (t < 0)
 				t += q;
 		}
 	}
+
 	return matches;
 }
 

@@ -15,15 +15,15 @@
 #define BECOME_MIN_NODE(_node, _heap)                                           \
 	list_move(&(_node)->list, &(_heap)->root_list)
 
-#define last_bit (sizeof(unsigned int) * CHAR_BIT - 1)
+unsigned int last_bit = 1 << (sizeof(unsigned int) * CHAR_BIT - 1);
 
-#define GET_DEGREE(_node) ((_node)->degree & ~(1 << last_bit))
+#define GET_DEGREE(_node) ((_node)->degree & ~last_bit)
 
-#define SET_MARK(_node)   ((_node)->degree |= 1 << last_bit)
+#define SET_MARK(_node)   ((_node)->degree |= last_bit)
 
-#define RESET_MARK(_node) ((_node)->degree &= ~(1 << last_bit))
+#define RESET_MARK(_node) ((_node)->degree &= ~last_bit)
 
-#define TEST_MARK(_node)  ((_node)->degree & 1 << last_bit)
+#define TEST_MARK(_node)  ((_node)->degree & last_bit)
 
 /* Upper bound on the degree of any node of an n-node Fibonacci heap. */
 static inline int ubdeg(int n)
@@ -48,7 +48,7 @@ static inline void link(struct fibheap_node *y, struct fibheap_node *x)
 
 static inline void consolidate(struct fibheap *h)
 {
-	struct fibheap_node **A, *x, *y, *next, *tmp, *min;
+	struct fibheap_node **A, *x, *y, *next, *swp, *min;
 	int i, d, maxdeg = ubdeg(h->n);
 
 	/* Let A[0..D(H.n)] be a new array. */
@@ -65,9 +65,9 @@ static inline void consolidate(struct fibheap *h)
 
 			if (h->cmp(y->value, x->value) < 0) {
 				/* Exchange x with y. */
-				tmp = x;
+				swp = x;
 				x   = y;
-				y   = tmp;
+				y   = swp;
 			}
 			link(y, x);
 			A[d] = NULL;
@@ -231,7 +231,7 @@ struct fibheap *fibheap_union(struct fibheap *heap1, struct fibheap *heap2)
 	return heap1;
 }
 
-/* Does -not- decrease the value of the node; clients are responsible for this,
+/* Does _not_ decrease the value of the node; clients are responsible for this,
  * as "value" is dependent on usage. */
 void fibheap_decrease(struct fibheap *h, struct fibheap_node *x)
 {
