@@ -40,7 +40,7 @@
 
 /* For comparing any two nodes. Clients have to define this. Should return
  * negative if a has higher priority than b. */
-typedef int (*fibheap_cmp)(void *, void *);
+typedef int (*fibheap_cmp)(const void *, const void *);
 
 /* Nodes are accessed by means of the heap's root list, which is implemented as
  * a circular, doubly-linked list whose head node connects to the heap node with

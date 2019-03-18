@@ -11,6 +11,8 @@
 #define PRIME  101
 #define MASK   0xFF
 
+void hash_insert_words(struct hash_table *, void *);
+
 struct word {
 	int        key;
 	const char *str;
@@ -116,7 +118,7 @@ static struct word_count *make_word_count(const char *word)
 	return wc;
 }
 
-static int word_cmp(void *_a, void *_b)
+static int word_cmp(const void *_a, const void *_b)
 {
 	struct word *a, *b;
 
@@ -138,7 +140,7 @@ static void __rbtree_inorder_walk(struct rbtree *t, struct rbtree_node *x)
 		__rbtree_inorder_walk(t, x->left);
 
 		const char *w = ((struct word *) x->value)->str;
-		hash_insert(dict, make_word_count(w));
+		hash_insert_words(dict, make_word_count(w));
 		sprintf(buf, "%s%s ", buf, w);
 
 		__rbtree_inorder_walk(t, x->right);
@@ -208,10 +210,11 @@ static void test_fibheap()
 	while (!fibheap_is_empty(h1)) {
 		n = fibheap_extract_min(h1);
 		w = ((struct word *) n->value)->str;
-		hash_insert(dict, make_word_count(w));
+		hash_insert_words(dict, make_word_count(w));
 		sprintf(buf, "%s%s ", buf, w);
 		free(n);
 	}
+
 	free(h1);
 	free(h2);
 }
@@ -237,10 +240,11 @@ static void test_patmatch()
 
 		printf("in the paragraph.\n");
 	}
+
 	printf("\n");
 }
 
-static unsigned int word_count_hash(void *word)
+static unsigned int word_count_hash_fn(const void *word)
 {
 	unsigned int c, ret = 1;
 	char *w = (char *) word;
@@ -251,11 +255,11 @@ static unsigned int word_count_hash(void *word)
 	return ret;
 }
 
-void hash_insert(struct hash_table *ht, void *entry)
+void hash_insert_words(struct hash_table *ht, void *entry)
 {
 	struct word_count *wc, *_wc = (struct word_count *) entry;
 	char *stripped = strip(_wc->key, tmp);
-	int idx = ht->func(stripped);
+	int idx = ht->fn(stripped);
 
 	/* If the word is already in the dictionary, increase its count. */
 	list_for_each_entry(wc, &ht->table[idx], list) {
@@ -266,10 +270,11 @@ void hash_insert(struct hash_table *ht, void *entry)
 			return;
 		}
 	}
-	list_add(&_wc->list, &ht->table[idx]);
+
+	hash_insert(ht, &_wc->list, stripped);
 }
 
-static int word_count_cmp(void *_a, void *_b)
+static int word_count_fibheap_cmp(const void *_a, const void *_b)
 {
 	struct word_count *a, *b;
 
@@ -279,11 +284,17 @@ static int word_count_cmp(void *_a, void *_b)
 	return (b->value > a->value) - (b->value < a->value);
 }
 
+static int word_count_hash_cmp(struct list_head *left, const void *right)
+{
+	return word_count_fibheap_cmp(
+		container_of(left, struct word_count, list), right);
+}
+
 /* Finds the most repeated words in the buffer. */
 static void test_hash()
 {
 	struct word_count *wc, *next;
-	struct fibheap *h = make_fibheap(word_count_cmp);
+	struct fibheap *h = make_fibheap(word_count_fibheap_cmp);
 	struct fibheap_node *hn;
 	int i, n = 10, sz = PRIME;
 
@@ -296,6 +307,7 @@ static void test_hash()
 			list_del(&wc->list);
 		}
 	}
+
 	i = 0;
 
 	/* Dump the top n elements of the heap. */
@@ -311,6 +323,7 @@ static void test_hash()
 		free(wc);
 		free(hn);
 	}
+
 	free(h);
 }
 
@@ -322,7 +335,7 @@ int main(int argc __attribute__ ((unused)),
 
 	int sz = PRIME;
 
-	dict = make_hash_table(sz, word_count_hash);
+	dict = make_hash_table(sz, word_count_hash_fn, word_count_hash_cmp);
 
 	printf("For those who like Camus:\n\n");
 

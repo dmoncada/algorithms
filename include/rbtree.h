@@ -36,7 +36,7 @@ typedef enum { RED = 0, BLACK } color_t;
 /* For comparing any two nodes. Clients have to define this. Returns negative if
  * a has a smaller key than b, positive if the other way around, and zero if
  * they're equal. */
-typedef int (*rbtree_cmp)(void *, void *);
+typedef int (*rbtree_cmp)(const void *, const void *);
 
 /* Simply consists of a pointer to the root node and the number of nodes in the
  * tree. Also, NIL is contained within the tree. */

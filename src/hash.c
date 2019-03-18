@@ -30,10 +30,10 @@ struct list_head *hash_search(struct hash_table *ht, const void *key)
 	int idx = ht->fn(key);
 	struct list_head *runner;
 
-	list_for_each(runner, &ht->table[idx]) {
+	list_for_each(runner, &ht->table[idx])
 		if (ht->cmp(runner, key))
 			return runner;
-	}
+
 	return NULL;
 }
 
