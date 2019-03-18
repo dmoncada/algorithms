@@ -16,6 +16,9 @@
  *  - rbtree_maximum()          Gets the node with the maximal key.
  *  - rbtree_predecessor()      Gets the preceding node for a specific one.
  *  - rbtree_successor()        Gets the following node for a specific one.
+ *  - rbtree_preorder_walk()    Traverses the tree in pre-order.
+ *  - rbtree_inorder_walk()     Traverses the tree in order.
+ *  - rbtree_postorder_walk()   Traverses the tree in post-order.
  *  - rbtree_insert()           Inserts a node, then rebalances the tree.
  *  - rbtree_delete()           Deletes a node, then rebalances the tree.
  *  - rbtree_destroy()          Deallocs. the tree and all its nodes.
@@ -37,6 +40,8 @@ typedef enum { RED = 0, BLACK } color_t;
  * a has a smaller key than b, positive if the other way around, and zero if
  * they're equal. */
 typedef int (*rbtree_cmp)(const void *, const void *);
+
+typedef void (*rbtree_visit)(struct rbtree_node *);
 
 /* Simply consists of a pointer to the root node and the number of nodes in the
  * tree. Also, NIL is contained within the tree. */
@@ -77,6 +82,12 @@ struct rbtree_node *rbtree_maximum(struct rbtree *);
 struct rbtree_node *rbtree_predecessor(struct rbtree *, struct rbtree_node *);
 
 struct rbtree_node *rbtree_successor(struct rbtree *, struct rbtree_node *);
+
+void rbtree_preorder_walk(struct rbtree *, rbtree_visit);
+
+void rbtree_inorder_walk(struct rbtree *, rbtree_visit);
+
+void rbtree_postorder_walk(struct rbtree *, rbtree_visit);
 
 void rbtree_insert(struct rbtree *, struct rbtree_node *);
 

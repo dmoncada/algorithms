@@ -132,12 +132,12 @@ static inline void insert_fixup(struct rbtree *t, struct rbtree_node *z)
 {
 	struct rbtree_node *y;
 
-	while (z->parent->color == RED) {
+	while (z->parent->color == RED)
 		if (z->parent == z->parent->parent->left)
 			INSERT_FIXUP(t, y, z, right, left);
 		else
 			INSERT_FIXUP(t, y, z, left, right);
-	}
+
 	t->root->color = BLACK;
 }
 
@@ -145,17 +145,17 @@ static inline void delete_fixup(struct rbtree *t, struct rbtree_node *x)
 {
 	struct rbtree_node *w;
 
-	while (x != t->root && x->color == BLACK) {
+	while (x != t->root && x->color == BLACK)
 		if (x == x->parent->left)
 			DELETE_FIXUP(t, w, x, left, right);
 		else
 			DELETE_FIXUP(t, w, x, right, left);
-	}
+
 	x->color = BLACK;
 }
 
-static inline void transplant(struct rbtree *t, struct rbtree_node *u,
-			      struct rbtree_node *v)
+static inline void transplant(
+	struct rbtree *t, struct rbtree_node *u, struct rbtree_node *v)
 {
 	if (u->parent == t->nil)
 		t->root = v;
@@ -167,22 +167,31 @@ static inline void transplant(struct rbtree *t, struct rbtree_node *u,
 	v->parent = u->parent;
 }
 
-static inline struct rbtree_node *__rbtree_search(struct rbtree *t,
-						  struct rbtree_node *x,
-						  void *value)
+static inline struct rbtree_node *__rbtree_search(
+	struct rbtree *t, struct rbtree_node *x, void *value)
 {
-	while (x != t->nil && t->cmp(value, x->value)) {
-		if (t->cmp(value, x->value) < 0)
+	// while (x != t->nil && t->cmp(value, x->value))
+	// 	if (t->cmp(value, x->value) < 0)
+	// 		x = x->left;
+	// 	else
+	// 		x = x->right;
+	int cmp;
+
+	while (x != t->nil) {
+		if ((cmp = t->cmp(x->value, value)) < 0)
 			x = x->left;
-		else
+		else if (cmp > 0)
 			x = x->right;
+		else
+			break; // Found it.
 	}
+
 	return x;
 }
 
 /* __min and __max are so short there's no point in turning them into macros. */
-static inline struct rbtree_node *__rbtree_minimum(struct rbtree *t,
-						   struct rbtree_node *x)
+static inline struct rbtree_node *__rbtree_minimum(
+	struct rbtree *t, struct rbtree_node *x)
 {
 	while (x->left != t->nil)
 		x = x->left;
@@ -190,13 +199,46 @@ static inline struct rbtree_node *__rbtree_minimum(struct rbtree *t,
 	return x;
 }
 
-static inline struct rbtree_node *__rbtree_maximum(struct rbtree *t,
-						   struct rbtree_node *x)
+static inline struct rbtree_node *__rbtree_maximum(
+	struct rbtree *t, struct rbtree_node *x)
 {
 	while (x->right != t->nil)
 		x = x->right;
 
 	return x;
+}
+
+static inline void __rbtree_preorder_walk(
+	struct rbtree *t, struct rbtree_node *x, rbtree_visit visit)
+{
+	if (x == t->nil)
+		return;
+
+	visit(x);
+	__rbtree_preorder_walk(t, x->left, visit);
+	__rbtree_preorder_walk(t, x->right, visit);
+}
+
+static inline void __rbtree_inorder_walk(
+	struct rbtree *t, struct rbtree_node *x, rbtree_visit visit)
+{
+	if (x == t->nil)
+		return;
+
+	__rbtree_inorder_walk(t, x->left, visit);
+	visit(x);
+	__rbtree_inorder_walk(t, x->right, visit);
+}
+
+static inline void __rbtree_postorder_walk(
+	struct rbtree *t, struct rbtree_node *x, rbtree_visit visit)
+{
+	if (x == t->nil)
+		return;
+
+	__rbtree_postorder_walk(t, x->left, visit);
+	__rbtree_postorder_walk(t, x->right, visit);
+	visit(x);
 }
 
 static inline void __rbtree_destroy(struct rbtree *t, struct rbtree_node *x)
@@ -267,6 +309,21 @@ struct rbtree_node *rbtree_successor(struct rbtree *t, struct rbtree_node *x)
 	SUCCESSOR(t, x);
 }
 
+void rbtree_preorder_walk(struct rbtree *t, rbtree_visit visit)
+{
+	__rbtree_preorder_walk(t, t->root, visit);
+}
+
+void rbtree_inorder_walk(struct rbtree *t, rbtree_visit visit)
+{
+	__rbtree_inorder_walk(t, t->root, visit);
+}
+
+void rbtree_postorder_walk(struct rbtree *t, rbtree_visit visit)
+{
+	__rbtree_postorder_walk(t, t->root, visit);
+}
+
 void rbtree_insert(struct rbtree *t, struct rbtree_node *z)
 {
 	struct rbtree_node *x, *y;
@@ -282,6 +339,7 @@ void rbtree_insert(struct rbtree *t, struct rbtree_node *z)
 		else
 			x = x->right;
 	}
+
 	z->parent = y;
 
 	if (y == t->nil)
@@ -331,6 +389,7 @@ void rbtree_delete(struct rbtree *t, struct rbtree_node *z)
 		y->left->parent = y;
 		y->color        = z->color;
 	}
+
 	if (y_color == BLACK)
 		delete_fixup(t, x);
 

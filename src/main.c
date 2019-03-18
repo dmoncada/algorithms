@@ -134,22 +134,11 @@ static void rbtree_insert_words(struct rbtree *t, struct word *words, int len)
 		rbtree_insert(t, make_rbtree_node(words + i));
 }
 
-static void __rbtree_inorder_walk(struct rbtree *t, struct rbtree_node *x)
+static void word_rbtree_visit(struct rbtree_node *x)
 {
-	if (x != t->nil) {
-		__rbtree_inorder_walk(t, x->left);
-
-		const char *w = ((struct word *) x->value)->str;
-		hash_insert_words(dict, make_word_count(w));
-		sprintf(buf, "%s%s ", buf, w);
-
-		__rbtree_inorder_walk(t, x->right);
-	}
-}
-
-static void rbtree_inorder_walk(struct rbtree *t)
-{
-	__rbtree_inorder_walk(t, t->root);
+	const char *w = ((struct word *) x->value)->str;
+	hash_insert_words(dict, make_word_count(w));
+	sprintf(buf, "%s%s ", buf, w);
 }
 
 /* Inserts randomly ordered words in a red-black tree. These are then dumped in
@@ -171,7 +160,7 @@ static void test_rbtree()
 	rbtree_delete(t, n);
 
 	/* Dump the contents of the tree in the buffer and dictionary. */
-	rbtree_inorder_walk(t);
+	rbtree_inorder_walk(t, word_rbtree_visit);
 
 	/* Finally, dump the tree itself. */
 	rbtree_destroy(t);
